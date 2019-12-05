@@ -1,21 +1,33 @@
 import React from 'react';
 import { Redirect, Route } from 'react-router-dom';
-export const PrivateRoute = ({ component: Component, ...rest }) => (
-  <Route
-    {...rest}
-    render={props =>
-      localStorage.getItem("@CESTA/token")
-        ? (
-          <Component {...props} />
-        )
-        : (
-          <Redirect
-            to={{
-              pathname: "/",
-              state: { from: props.location },
-            }}
-          />
-        )
-    }
-  />
-);
+import { getUser, isTokenExpired, logout } from '../services/auth';
+export { isAuthenticated } from '../services/auth';
+export default function RouteWrapper({
+  component: Component,
+  isPrivate = false,
+  isadmin = false,
+  ...rest
+}) {
+
+  if (!isAuthenticated() && isPrivate) {
+    return <Redirect to="/" />;
+  }
+  if (isAuthenticated() && !isPrivate) {
+    return <Redirect to="/aleat" />;
+  }
+  if (isAuthenticated() && isPrivate && isadmin && !getUser().isadmin) {
+    return <Redirect to="/aleat" />;
+  }
+  if (isTokenExpired()) {
+    logout();
+    return <Redirect to="/" />;
+  }
+  return (
+    <>
+      {!isPrivate}
+      <Route {...rest} component={Component} />
+    </>
+  );
+
+}
+
